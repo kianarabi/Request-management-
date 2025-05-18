@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Request Management System (BST + MaxHeap) with Visuals</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 15px;
+            background: #ffffff;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        section {
+            background: white;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.1);
+        }
+        label {
+            display: inline-block;
+            width: 90px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"] {
+            width: 150px;
+            padding: 5px;
+            margin-right: 15px;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+        }
+        button {
+            padding: 6px 15px;
+            border: none;
+            background-color: #0066cc;
+            color: white;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.25s ease;
+        }
+
+
+        svg {
+            background: white;
+            border: 1px solid #ccc;
+        }
+        text.node-text {
+            fill: #000;
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+            user-select: none;
+        }
+        circle.node-circle {
+            fill: #1e90ff;
+            stroke: #004080;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: fill 0.3s ease;
+        }
+        circle.node-circle:hover {
+            fill: #104080;
+        }
+        line.edge-line {
+            stroke: #888;
+            stroke-width: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Request Management System</h1>
+
+    <section>
+        <h2>Add Request</h2>
+        <div class="flex-row">
+            <label for="addId">ID:</label>
+            <input type="number" id="addId" />
+            <label for="addName">Name:</label>
+            <input type="text" id="addName" />
+            <label for="addPriority">Priority:</label>
+            <input type="number" id="addPriority" />
+            <button onclick="addRequest()">Add</button>
+        </div>
+    </section>
+
+    <section>
+        <h2>Search Request</h2>
+        <div class="flex-row">
+            <label for="searchId">ID:</label>
+            <input type="number" id="searchId" />
+            <button onclick="searchRequest()">Search</button>
+        </div>
+    </section>
+
+    <section>
+        <h2>Delete Request</h2>
+        <div class="flex-row">
+            <label for="deleteId">ID:</label>
+            <input type="number" id="deleteId" />
+            <button onclick="deleteRequest()">Delete</button>
+        </div>
+    </section>
+
+    <section>
+        <h2>Increase Priority</h2>
+        <div class="flex-row">
+            <label for="increaseId">ID:</label>
+            <input type="number" id="increaseId" />
+            <label for="newPriority">New Priority:</label>
+            <input type="number" id="newPriority" />
+            <button onclick="increasePriority()">Increase</button>
+        </div>
+    </section>
+
+    <section>
+        <h2>Process Highest Priority Request</h2>
+        <button onclick="processHighestPriority()">Process</button>
+    </section>
+
+    <section>
+        <h2>BST (Requests by ID)</h2>
+        <pre id="bstOutput">(No data)</pre>
+        <div class="visual-container" id="bstVisualContainer">
+            <svg id="bstVisual" width="900" height="300"></svg>
+        </div>
+    </section>
+
+    <section>
+        <h2>MaxHeap (Requests by Priority)</h2>
+        <pre id="heapOutput">(No data)</pre>
+        <div class="visual-container" id="heapVisualContainer">
+            <svg id="heapVisual" width="900" height="300"></svg>
+        </div>
+    </section>
+
+    <script>
+        // Request structure
+        class Request {
+            constructor(id = 0, name = "", priority = 0) {
+                this.id = id;
+                this.name = name;
+                this.priority = priority;
+            }
+        }
+
+        // BST Node
+        class BSTNode {
+            constructor(id, name) {
+                this.id = id;
+                this.name = name;
+                this.left = null;
+                this.right = null;
+            }
+        }
+
+        // BST Class
+        class BST {
+            constructor() {
+                this.root = null;
+            }
+
+            insert(node, id, name) {
+                if (!node) return new BSTNode(id, name);
+                if (id < node.id) node.left = this.insert(node.left, id, name);
+                else if (id > node.id) node.right = this.insert(node.right, id, name);
+                return node;
+            }
+
+            insertRequest(id, name) {
+                this.root = this.insert(this.root, id, name);
+            }
+
+            search(node, id) {
+                if (!node || node.id === id) return node;
+                if (id < node.id) return this.search(node.left, id);
+                else return this.search(node.right, id);
+            }
+
+            searchRequest(id) {
+                return this.search(this.root, id);
+            }
+
+            findMin(node) {
+                while (node && node.left) node = node.left;
+                return node;
+            }
+
+            removeNode(root, id) {
+                if (!root) return null;
+                if (id < root.id) {
+                    root.left = this.removeNode(root.left, id);
+                } else if (id > root.id) {
+                    root.right = this.removeNode(root.right, id);
+                } else {
+                    if (!root.left) return root.right;
+                    else if (!root.right) return root.left;
+                    else {
+                        let minNode = this.findMin(root.right);
+                        root.id = minNode.id;
+                        root.name = minNode.name;
+                        root.right = this.removeNode(root.right, minNode.id);
+                    }
+                }
+                return root;
+            }
+
+            deleteRequest(id) {
+                this.root = this.removeNode(this.root, id);
+            }
+
+            preorder(node, result) {
+                if (!node) return;
+                result.push(`ID: ${node.id}, Name: ${node.name}`);
+                this.preorder(node.left, result);
+                this.preorder(node.right, result);
+            }
+
+            printBST() {
+                let result = [];
+                this.preorder(this.root, result);
+                return result.length ? result.join("\n") : "(BST is empty)";
+            }
+        }
+
+        // MaxHeap Class
+        class MaxHeap {
+            constructor() {
+                this.heap = [];
+            }
+
+            parent(i) { return Math.floor((i - 1) / 2); }
+            leftChild(i) { return 2 * i + 1; }
+            rightChild(i) { return 2 * i + 2; }
+
+            heapifyDown(i) {
+                let largest = i;
+                let l = this.leftChild(i);
+                let r = this.rightChild(i);
+
+                if (l < this.heap.length && this.heap[l].priority > this.heap[largest].priority) {
+                    largest = l;
+                }
+                if (r < this.heap.length && this.heap[r].priority > this.heap[largest].priority) {
+                    largest = r;
+                }
+                if (largest !== i) {
+                    [this.heap[i], this.heap[largest]] = [this.heap[largest], this.heap[i]];
+                    this.heapifyDown(largest);
+                }
+            }
+
+            heapifyUp(i) {
+                while (i > 0 && this.heap[i].priority > this.heap[this.parent(i)].priority) {
+                    [this.heap[i], this.heap[this.parent(i)]] = [this.heap[this.parent(i)], this.heap[i]];
+                    i = this.parent(i);
+                }
+            }
+
+            insertHeap(id, priority) {
+                this.heap.push(new Request(id, "", priority));
+                this.heapifyUp(this.heap.length - 1);
+            }
+
+            deleteMaxHeap() {
+                if (this.heap.length === 0) return null;
+                const max = this.heap[0];
+                this.heap[0] = this.heap[this.heap.length - 1];
+                this.heap.pop();
+                this.heapifyDown(0);
+                return max;
+            }
+
+            printMaxHeap() {
+                if (this.heap.length === 0) return "(MaxHeap is empty)";
+                return this.heap.map(req => `ID: ${req.id}, Priority: ${req.priority}`).join("\n");
+            }
+
+            processHighestPriorityRequest() {
+                return this.deleteMaxHeap();
+            }
+
+            findIndexById(id) {
+                return this.heap.findIndex(req => req.id === id);
+            }
+
+            increasePriority(id, newPriority) {
+                let i = this.findIndexById(id);
+                if (i === -1) return false;
+                if (newPriority > this.heap[i].priority) {
+                    this.heap[i].priority = newPriority;
+                    this.heapifyUp(i);
+                    return true;
+                }
+                return false;
+            }
+
+            removeById(id) {
+                let i = this.findIndexById(id);
+                if (i === -1) return false;
+                this.heap[i] = this.heap[this.heap.length - 1];
+                this.heap.pop();
+                this.heapifyDown(i);
+                this.heapifyUp(i);
+                return true;
+            }
+
+            isEmptyHeap() {
+                return this.heap.length === 0;
+            }
+        }
+
+        // Manager class
+        class RequestManager {
+            constructor() {
+                this.bst = new BST();
+                this.heap = new MaxHeap();
+            }
+
+            insertRequest(id, name, priority) {
+                if (this.bst.searchRequest(id)) {
+                    alert(`Request with ID ${id} already exists.`);
+                    return;
+                }
+                this.bst.insertRequest(id, name);
+                this.heap.insertHeap(id, priority);
+                this.renderAll();
+            }
+
+            searchRequest(id) {
+                const node = this.bst.searchRequest(id);
+                if (node) {
+                    alert(`Found request: ID = ${node.id}, Name = ${node.name}`);
+                } else {
+                    alert("Request not found.");
+                }
+            }
+
+            deleteRequest(id) {
+                let foundInBST = this.bst.searchRequest(id);
+                if (!foundInBST) {
+                    alert("Request not found in BST.");
+                    return;
+                }
+                this.bst.deleteRequest(id);
+                this.heap.removeById(id);
+                this.renderAll();
+            }
+
+            increasePriority(id, newPriority) {
+                let increased = this.heap.increasePriority(id, newPriority);
+                if (!increased) {
+                    alert("Request not found or new priority is not higher.");
+                    return;
+                }
+                this.renderAll();
+            }
+
+            processHighestPriority() {
+                if (this.heap.isEmptyHeap()) {
+                    alert("No requests to process.");
+                    return;
+                }
+                const req = this.heap.processHighestPriorityRequest();
+                this.bst.deleteRequest(req.id);
+                alert(`Processed request with ID: ${req.id}, Priority: ${req.priority}`);
+                this.renderAll();
+            }
+
+            renderAll() {
+                // Text outputs
+                document.getElementById("bstOutput").textContent = 
+                    "Preorder Traversal:\n" + this.bst.printBST();
+                document.getElementById("heapOutput").textContent = 
+                    "Level Order Traversal:\n" + this.heap.printMaxHeap();
+
+                // Visual outputs
+                renderBST(this.bst.root);
+                renderHeap(this.heap.heap);
+            }
+        }
+
+        // Helper: Draw BST with recursive layout
+        function renderBST(root) {
+            const svg = document.getElementById("bstVisual");
+            svg.innerHTML = "";
+            if (!root) return;
+
+            const nodeRadius = 20;
+            const levelHeight = 70;
+            const nodeGap = 40;
+
+            // Calculate horizontal positions via inorder traversal
+            let positions = [];
+            let x = 0;
+            function inorderPositions(node, depth) {
+                if (!node) return;
+                inorderPositions(node.left, depth + 1);
+                positions.push({node, depth, order: x++});
+                inorderPositions(node.right, depth + 1);
+            }
+            inorderPositions(root, 0);
+
+            // Map node to position {x, y}
+            const nodePosMap = new Map();
+            positions.forEach(({node, depth, order}) => {
+                nodePosMap.set(node, {x: order * nodeGap * 2 + nodeRadius + 10, y: depth * levelHeight + nodeRadius + 10});
+            });
+
+            // Draw edges (lines) recursively
+            function drawEdges(node) {
+                if (!node) return;
+                if (node.left) drawLine(nodePosMap.get(node), nodePosMap.get(node.left));
+                if (node.right) drawLine(nodePosMap.get(node), nodePosMap.get(node.right));
+                drawEdges(node.left);
+                drawEdges(node.right);
+            }
+            function drawLine(p1, p2) {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", p1.x);
+                line.setAttribute("y1", p1.y);
+                line.setAttribute("x2", p2.x);
+                line.setAttribute("y2", p2.y);
+                line.classList.add("edge-line");
+                svg.appendChild(line);
+            }
+            drawEdges(root);
+
+            // Draw nodes (circles + text)
+            positions.forEach(({node}) => {
+                let pos = nodePosMap.get(node);
+                let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", pos.x);
+                circle.setAttribute("cy", pos.y);
+                circle.setAttribute("r", nodeRadius);
+                circle.classList.add("node-circle");
+                svg.appendChild(circle);
+
+                let text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", pos.x);
+                text.setAttribute("y", pos.y);
+                text.classList.add("node-text");
+                text.textContent = node.id;
+                svg.appendChild(text);
+            });
+        }
+
+        // Helper: Draw heap as a tree (based on array indices)
+        function renderHeap(heapArray) {
+            const svg = document.getElementById("heapVisual");
+            svg.innerHTML = "";
+            if (heapArray.length === 0) return;
+
+            const nodeRadius = 20;
+            const levelHeight = 70;
+            const maxWidth = 900;
+
+            // Calculate max depth
+            const depth = Math.floor(Math.log2(heapArray.length)) + 1;
+
+            // Calculate x positions for nodes per level
+            // At each level, nodes are spaced evenly in the width allocated
+            const positions = [];
+            for (let i = 0; i < heapArray.length; i++) {
+                let level = Math.floor(Math.log2(i + 1));
+                let indexInLevel = i - (2 ** level - 1);
+                let nodesInLevel = 2 ** level;
+                let horizontalSpacing = maxWidth / (nodesInLevel + 1);
+                let x = horizontalSpacing * (indexInLevel + 1);
+                let y = level * levelHeight + nodeRadius + 10;
+                positions.push({x, y});
+            }
+
+            // Draw edges
+            for (let i = 0; i < heapArray.length; i++) {
+                let leftIdx = 2 * i + 1;
+                let rightIdx = 2 * i + 2;
+                if (leftIdx < heapArray.length) drawLine(positions[i], positions[leftIdx]);
+                if (rightIdx < heapArray.length) drawLine(positions[i], positions[rightIdx]);
+            }
+            function drawLine(p1, p2) {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", p1.x);
+                line.setAttribute("y1", p1.y);
+                line.setAttribute("x2", p2.x);
+                line.setAttribute("y2", p2.y);
+                line.classList.add("edge-line");
+                svg.appendChild(line);
+            }
+
+            // Draw nodes
+            for (let i = 0; i < heapArray.length; i++) {
+                const pos = positions[i];
+                let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", pos.x);
+                circle.setAttribute("cy", pos.y);
+                circle.setAttribute("r", nodeRadius);
+                circle.classList.add("node-circle");
+                svg.appendChild(circle);
+
+                let text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", pos.x);
+                text.setAttribute("y", pos.y);
+                text.classList.add("node-text");
+                text.textContent = heapArray[i].priority;
+                svg.appendChild(text);
+            }
+        }
+
+        // Create the manager instance
+        const manager = new RequestManager();
+
+        // UI functions
+        function addRequest() {
+            const id = parseInt(document.getElementById("addId").value);
+            const name = document.getElementById("addName").value.trim();
+            const priority = parseInt(document.getElementById("addPriority").value);
+            if (isNaN(id) || !name || isNaN(priority)) {
+                alert("Please enter valid ID, Name, and Priority.");
+                return;
+            }
+            manager.insertRequest(id, name, priority);
+            document.getElementById("addId").value = "";
+            document.getElementById("addName").value = "";
+            document.getElementById("addPriority").value = "";
+        }
+
+        function searchRequest() {
+            const id = parseInt(document.getElementById("searchId").value);
+            if (isNaN(id)) {
+                alert("Please enter a valid ID.");
+                return;
+            }
+            manager.searchRequest(id);
+            document.getElementById("searchId").value = "";
+        }
+
+        function deleteRequest() {
+            const id = parseInt(document.getElementById("deleteId").value);
+            if (isNaN(id)) {
+                alert("Please enter a valid ID.");
+                return;
+            }
+            manager.deleteRequest(id);
+            document.getElementById("deleteId").value = "";
+        }
+
+        function increasePriority() {
+            const id = parseInt(document.getElementById("increaseId").value);
+            const newPriority = parseInt(document.getElementById("newPriority").value);
+            if (isNaN(id) || isNaN(newPriority)) {
+                alert("Please enter valid ID and New Priority.");
+                return;
+            }
+            manager.increasePriority(id, newPriority);
+            document.getElementById("increaseId").value = "";
+            document.getElementById("newPriority").value = "";
+        }
+
+        function processHighestPriority() {
+            manager.processHighestPriority();
+        }
+
+        // Initial render
+        manager.renderAll();
+    </script>
+</body>
+</html>
